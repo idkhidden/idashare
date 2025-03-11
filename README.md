@@ -3,8 +3,8 @@
 idashare is an IDA Pro plugin that allows you to quickly share the currently loaded binary and IDA database over a local HTTP server with a single click.
 
 ## Features
-- Share currently loaded binary.
-- Share currently loaded IDA database.
+- Share currently loaded binary. (`Ctrl+Shift+S`)
+- Share currently loaded IDA database. (`Ctrl+Shift+D`)
 ## Requirements
 
 - IDA Pro 7.0 or higher.
