@@ -17,7 +17,12 @@ def getbinpath():
         print("[ idashare ] No valid binary loaded.")
     return binarypath
 
-        
+def getidbpath():
+    idbpath = idc.get_idb_path()
+    if not idbpath or not os.path.exists(idbpath):
+        print("[ idashare ] No valid IDA database loaded.")
+    return idbpath
+
 def startserver(directory):
     global server
     os.chdir(directory)
@@ -29,51 +34,61 @@ def startserver(directory):
     except Exception as e:
         print(f"Server error: {e}")
 
-def sharebin():
-    binarypath = getbinpath()
-    if not binarypath:
+def share(filepath):
+    if not filepath:
         return
 
-    dir = os.path.dirname(binarypath)
-    sock  = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.connect(('8.8.8.8', 80))  
-    ip = sock.getsockname()[0]  
+    dir = os.path.dirname(filepath)
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.connect(('8.8.8.8', 80))
+    ip = sock.getsockname()[0]
     sock.close()
 
     global serverthread
+
     if not serverthread or not serverthread.is_alive():
         serverthread = threading.Thread(target=startserver, args=(dir,), daemon=True)
         serverthread.start()
-        if os.path.exists(binarypath):  
-            print(f"[ idashare ] http://{ip}:{PORT}/{os.path.basename(binarypath)}")
+        if os.path.exists(filepath):
+            print(f"[ idashare ] http://{ip}:{PORT}/{os.path.basename(filepath)}")
     else:
         print("[ idashare ] Server is already running.")
 
 class idashare_actionhandler(ida_kernwin.action_handler_t):
-    def __init__(self):
+    def __init__(self, sharefunc):
         ida_kernwin.action_handler_t.__init__(self)
+        self.sharefunc = sharefunc
 
     def activate(self, ctx):
-        sharebin()  
+        self.sharefunc()
         return 1
 
     def update(self, ctx):
         return ida_kernwin.AST_ENABLE_FOR_IDB
 
-
 def register_actions():
-    actionstart = ida_kernwin.action_desc_t(
-        'idashare_share',
+    actionbin = ida_kernwin.action_desc_t(
+        'idashare_share_bin',
         'Share binary',
-        idashare_actionhandler(),
+        idashare_actionhandler(lambda: share(getbinpath())),
         'Ctrl+Shift+S',
         '',
         0)
 
-    ida_kernwin.register_action(actionstart)
+    actiondb = ida_kernwin.action_desc_t(
+        'idashare_share_db',
+        'Share IDA database',
+        idashare_actionhandler(lambda: share(getidbpath())),
+        'Ctrl+Shift+D',
+        '',
+        0)
 
-    ida_kernwin.attach_action_to_menu('Edit/idashare/', 'idashare_share', ida_kernwin.SETMENU_APP)
+    ida_kernwin.register_action(actionbin)
+    ida_kernwin.register_action(actiondb)
 
+    ida_kernwin.attach_action_to_menu('Edit/idashare/', 'idashare_share_bin', ida_kernwin.SETMENU_APP)
+    ida_kernwin.attach_action_to_menu('Edit/idashare/', 'idashare_share_db', ida_kernwin.SETMENU_APP)
 
 class idashare(idaapi.plugin_t):
     flags = idaapi.PLUGIN_FIX
@@ -92,7 +107,6 @@ class idashare(idaapi.plugin_t):
 
     def term(self):
         print("[ idashare ] terminated.")
-
 
 def PLUGIN_ENTRY():
     return idashare()
