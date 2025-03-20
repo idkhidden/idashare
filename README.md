@@ -1,4 +1,6 @@
-# idashare
+![idashare](https://github.com/user-attachments/assets/1558bb2d-2d90-4500-a675-36f167b21035)
+
+# idashare 
 
 idashare is an IDA Pro plugin that allows you to quickly share the currently loaded binary and IDA database over a local HTTP server with a single click.
 
